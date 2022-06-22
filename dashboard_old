@@ -1,0 +1,76 @@
+data "newrelic_entity" "docker_desktop_dashboard" {
+  name = "docker-desktop"
+
+}
+
+resource "newrelic_dashboard" "dd_dashbaord" {
+  title = "New Relic Terraform Example"
+
+  filter {
+    event_types = [
+      "Transaction"
+    ]
+    attributes = [
+      "appName",
+      "name"
+    ]
+  }
+
+  widget {
+    title = "Requests per minute"
+    visualization = "billboard"
+    nrql = "SELECT rate(count(*), 1 minute) FROM Transaction"
+    row = 1
+    column = 1
+  }
+
+  widget {
+    title = "Error rate"
+    visualization = "gauge"
+    nrql = "SELECT percentage(count(*), WHERE error IS True) FROM Transaction"
+    threshold_red = 2.5
+    row = 1
+    column = 2
+  }
+
+  widget {
+    title = "Average transaction duration, by application"
+    visualization = "facet_bar_chart"
+    nrql = "SELECT average(duration) FROM Transaction FACET appName"
+    row = 1
+    column = 3
+  }
+
+  widget {
+    title = "Apdex, top 5 by host"
+    duration = 1800000
+    visualization = "metric_line_chart"
+    entity_ids = [
+      data.newrelic_application.my_application.id,
+    ]
+    metric {
+      name = "Apdex"
+      values = [ "score" ]
+    }
+    facet = "host"
+    limit = 5
+    row = 2
+    column = 1
+  }
+
+  widget {
+    title = "Requests per minute, by transaction"
+    visualization = "facet_table"
+    nrql = "SELECT rate(count(*), 1 minute) FROM Transaction FACET name"
+    row = 2
+    column = 2
+  }
+
+  widget {
+    title = "Dashboard Note"
+    visualization = "markdown"
+    source = "### Helpful Links\n\n* [New Relic One](https://one.newrelic.com)\n* [Developer Portal](https://developer.newrelic.com)"
+    row = 2
+    column = 3
+  }
+}
